@@ -1,5 +1,26 @@
-import type { WorkType } from './types'
+import type { WorkType, StructuredResult } from './types'
 import { WORK_TYPES } from './workTypes'
+
+/** Пытается разобрать ответ бэкенда как структурированный JSON-результат.
+ *  Возвращает null для старых текстовых ответов (тогда работает legacy-рендер). */
+export function parseStructured(answer: string): StructuredResult | null {
+  if (!answer) return null
+  let data: unknown
+  try {
+    data = JSON.parse(answer)
+  } catch {
+    return null
+  }
+  if (
+    data !== null &&
+    typeof data === 'object' &&
+    Array.isArray((data as StructuredResult).segments) &&
+    Array.isArray((data as StructuredResult).criteria)
+  ) {
+    return data as StructuredResult
+  }
+  return null
+}
 
 export interface ParsedScore {
   score: number

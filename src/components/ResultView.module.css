@@ -54,6 +54,11 @@
   margin-bottom: 24px;
 }
 
+/* Список карточек критериев (новый структурированный экран). */
+.criteriaList {
+  margin-bottom: 22px;
+}
+
 .pill {
   background: var(--paper);
   border: 2.5px solid var(--ink);
@@ -61,7 +66,7 @@
   box-shadow: 3px 3px 0 var(--ink);
   padding: 11px 6px;
   text-align: center;
-  /* Влёт плиток оркеструет Motion (stagger) в ResultView. */
+  animation: stickerIn 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
 
 .pillName {
