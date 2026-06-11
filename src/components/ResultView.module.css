@@ -54,6 +54,11 @@
   margin-bottom: 24px;
 }
 
+/* Список карточек критериев (новый структурированный экран). */
+.criteriaList {
+  margin-bottom: 22px;
+}
+
 .pill {
   background: var(--paper);
   border: 2.5px solid var(--ink);

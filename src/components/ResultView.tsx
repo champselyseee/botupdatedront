@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { WorkType } from '../lib/types'
-import { buildResultModel } from '../lib/parse'
+import type { WorkType, StructuredResult } from '../lib/types'
+import { buildResultModel, parseStructured } from '../lib/parse'
+import { WORK_TYPES } from '../lib/workTypes'
+import { HighlightedText } from './HighlightedText'
+import { ErrorLegend } from './ErrorLegend'
+import { CriteriaCard } from './CriteriaCard'
 import styles from './ResultView.module.css'
 
 // Цвет по доле набранных баллов — ссылки на CSS-токены (единый источник палитры).
@@ -59,9 +63,52 @@ function ScoreCounter({ target, max }: { target: number; max: number | string })
   )
 }
 
+/** Новый экран: подсветка ошибок в тексте + легенда + карточки критериев. */
+function StructuredResultView({ data, type }: { data: StructuredResult; type: WorkType }) {
+  const resultLabel = WORK_TYPES[type].resultLabel
+  const heroStyle =
+    data.max_score > 0 ? { background: heroColor(data.score / data.max_score) } : undefined
+  return (
+    <>
+      <div className={styles.hero} style={heroStyle}>
+        <div className={styles.heroLabel}>Итоговый балл</div>
+        <ScoreCounter target={data.score} max={data.max_score} />
+        <div className={styles.heroType}>{resultLabel}</div>
+      </div>
+
+      <ErrorLegend segments={data.segments} />
+
+      {data.segments.length > 0 && <HighlightedText segments={data.segments} />}
+
+      {data.criteria.length > 0 && (
+        <div className={styles.criteriaList}>
+          {data.criteria.map((c, i) => (
+            <CriteriaCard key={`${c.code}-${i}`} c={c} index={i} />
+          ))}
+        </div>
+      )}
+
+      {data.summary ? (
+        <div className={`${styles.section} ${styles.good}`}>
+          <div className={styles.sectionTitle}>Итог и рекомендации</div>
+          <div className={styles.sectionBody}>{data.summary}</div>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
 export function ResultView({ text, type }: { text: string; type: WorkType }) {
-  const model = useMemo(() => buildResultModel(text, type), [text, type])
-  const { score, maxScore, criteria, sections, resultLabel } = model
+  const structured = useMemo(() => parseStructured(text), [text])
+  // Legacy-модель считаем только если ответ не структурированный (старые записи).
+  const model = useMemo(
+    () => (structured ? null : buildResultModel(text, type)),
+    [structured, text, type],
+  )
+
+  if (structured) return <StructuredResultView data={structured} type={type} />
+
+  const { score, maxScore, criteria, sections, resultLabel } = model!
 
   const heroStyle =
     score && typeof maxScore === 'number'

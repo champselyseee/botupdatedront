@@ -28,6 +28,16 @@
   --c-warn: #e6900f;
   --c-error: var(--coral-deep);
 
+  /* Цвета типов ошибок (подсветка текста + легенда) */
+  --purple: #7c3aed;
+  --err-spelling: var(--coral-deep); /* орфографическая — красный */
+  --err-punctuation: #e6760f; /* пунктуационная — оранжевый */
+  --err-grammar: #c98a00; /* грамматическая — горчично-жёлтый (контраст на «бумаге») */
+  --err-speech: var(--green-deep); /* речевая — зелёный */
+  --err-factual: var(--indigo); /* фактическая — синий */
+  --err-logical: var(--purple); /* логическая — фиолетовый */
+  --err-recommendation: var(--ink-faint); /* рекомендация — серый */
+
   /* Формы и линии */
   --r-lg: 26px;
   --r-md: 18px;
