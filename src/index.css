@@ -51,6 +51,20 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background-color: var(--paper);
+  /* Ощущение нативного приложения внутри Telegram: */
+  overscroll-behavior: none;   /* без «резинового» отскока у краёв */
+  touch-action: pan-y;         /* только вертикальный скролл — ни pinch-zoom, ни double-tap-zoom */
+  -webkit-touch-callout: none; /* без iOS long-press контекст-меню */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* В полях ввода возвращаем нормальное выделение/редактирование и жесты. */
+input,
+textarea,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: auto;
 }
 
 body {
