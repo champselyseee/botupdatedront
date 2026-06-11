@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { AttachedFile, Screen, WorkType } from './lib/types'
 import { URL_TOKEN } from './lib/config'
 import { checkToken, submitProxy } from './lib/api'
@@ -36,6 +37,7 @@ export function App() {
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorId = useRef(0)
   const tokenCheckStarted = useRef(false)
+  const reduceMotion = useReducedMotion()
 
   const showError = useCallback((text: string) => {
     errorId.current += 1
@@ -182,34 +184,60 @@ export function App() {
     }
   }
 
-  switch (screen) {
-    case 'checking':
-      return <CheckingScreen message={checkingMessage} />
-    case 'noaccess':
-      return <NoAccessScreen message={noAccessMessage} />
-    case 'loading':
-      return <LoadingScreen />
-    case 'result':
-      return result ? (
-        <ResultScreen text={result.text} type={result.type} />
-      ) : (
-        <LoadingScreen />
-      )
-    case 'form':
-    default:
-      return (
-        <FormScreen
-          token={URL_TOKEN}
-          form={form}
-          error={error}
-          onSelectType={onSelectType}
-          onPhotosChange={onPhotosChange}
-          onFileChange={onFileChange}
-          onTextChange={onTextChange}
-          onRecognized={onRecognized}
-          onError={showError}
-          onSubmit={onSubmit}
-        />
-      )
+  function renderScreen() {
+    switch (screen) {
+      case 'checking':
+        return <CheckingScreen message={checkingMessage} />
+      case 'noaccess':
+        return <NoAccessScreen message={noAccessMessage} />
+      case 'loading':
+        return <LoadingScreen />
+      case 'result':
+        return result ? (
+          <ResultScreen text={result.text} type={result.type} />
+        ) : (
+          <LoadingScreen />
+        )
+      case 'form':
+      default:
+        return (
+          <FormScreen
+            token={URL_TOKEN}
+            form={form}
+            error={error}
+            onSelectType={onSelectType}
+            onPhotosChange={onPhotosChange}
+            onFileChange={onFileChange}
+            onTextChange={onTextChange}
+            onRecognized={onRecognized}
+            onError={showError}
+            onSubmit={onSubmit}
+          />
+        )
+    }
   }
+
+  // Плавные переходы между экранами. mode="wait" — уходящий экран завершает
+  // exit, затем входит новый. Уважает prefers-reduced-motion.
+  const enter = reduceMotion
+    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 1 } }
+    : {
+        initial: { opacity: 0, y: 18, scale: 0.985 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: -14, scale: 0.99 },
+      }
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={screen}
+        initial={enter.initial}
+        animate={enter.animate}
+        exit={enter.exit}
+        transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {renderScreen()}
+      </motion.div>
+    </AnimatePresence>
+  )
 }

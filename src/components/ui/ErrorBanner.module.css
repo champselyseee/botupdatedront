@@ -11,3 +11,24 @@
   text-align: center;
   animation: shake 0.4s;
 }
+
+/* Keyframes держим в этом же модуле — иначе CSS Modules скоупит имя в `animation`,
+   и глобальный @keyframes (index.css) не находится. */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px) rotate(-1deg);
+  }
+  40% {
+    transform: translateX(7px) rotate(1deg);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
+}

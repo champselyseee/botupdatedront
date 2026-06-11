@@ -40,36 +40,3 @@ export interface OcrResponse {
 export interface CheckTokenResponse {
   ok?: boolean
 }
-
-// ── Структурированный результат проверки (новый формат бэкенда) ──
-
-export type ErrorType =
-  | 'none'
-  | 'spelling'
-  | 'punctuation'
-  | 'grammar'
-  | 'speech'
-  | 'factual'
-  | 'logical'
-  | 'recommendation'
-
-export interface ResultSegment {
-  t: string
-  e: ErrorType
-}
-
-export interface ResultCriterion {
-  code: string
-  score: number
-  max: number
-  errors: number
-  comment: string
-}
-
-export interface StructuredResult {
-  score: number
-  max_score: number
-  segments: ResultSegment[]
-  criteria: ResultCriterion[]
-  summary: string
-}

@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { CSSProperties } from 'react'
-import type { WorkType, StructuredResult } from '../lib/types'
-import { buildResultModel, parseStructured } from '../lib/parse'
-import { WORK_TYPES } from '../lib/workTypes'
-import { HighlightedText } from './HighlightedText'
-import { ErrorLegend } from './ErrorLegend'
-import { CriteriaCard } from './CriteriaCard'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
+import type { WorkType } from '../lib/types'
+import { buildResultModel } from '../lib/parse'
 import styles from './ResultView.module.css'
 
 // Цвет по доле набранных баллов — ссылки на CSS-токены (единый источник палитры).
@@ -63,61 +59,41 @@ function ScoreCounter({ target, max }: { target: number; max: number | string })
   )
 }
 
-/** Новый экран: подсветка ошибок в тексте + легенда + карточки критериев. */
-function StructuredResultView({ data, type }: { data: StructuredResult; type: WorkType }) {
-  const resultLabel = WORK_TYPES[type].resultLabel
-  const heroStyle =
-    data.max_score > 0 ? { background: heroColor(data.score / data.max_score) } : undefined
-  return (
-    <>
-      <div className={styles.hero} style={heroStyle}>
-        <div className={styles.heroLabel}>Итоговый балл</div>
-        <ScoreCounter target={data.score} max={data.max_score} />
-        <div className={styles.heroType}>{resultLabel}</div>
-      </div>
-
-      <ErrorLegend segments={data.segments} />
-
-      {data.segments.length > 0 && <HighlightedText segments={data.segments} />}
-
-      {data.criteria.length > 0 && (
-        <div className={styles.criteriaList}>
-          {data.criteria.map((c, i) => (
-            <CriteriaCard key={`${c.code}-${i}`} c={c} index={i} />
-          ))}
-        </div>
-      )}
-
-      {data.summary ? (
-        <div className={`${styles.section} ${styles.good}`}>
-          <div className={styles.sectionTitle}>Итог и рекомендации</div>
-          <div className={styles.sectionBody}>{data.summary}</div>
-        </div>
-      ) : null}
-    </>
-  )
-}
-
 export function ResultView({ text, type }: { text: string; type: WorkType }) {
-  const structured = useMemo(() => parseStructured(text), [text])
-  // Legacy-модель считаем только если ответ не структурированный (старые записи).
-  const model = useMemo(
-    () => (structured ? null : buildResultModel(text, type)),
-    [structured, text, type],
-  )
-
-  if (structured) return <StructuredResultView data={structured} type={type} />
-
-  const { score, maxScore, criteria, sections, resultLabel } = model!
+  const model = useMemo(() => buildResultModel(text, type), [text, type])
+  const { score, maxScore, criteria, sections, resultLabel } = model
+  const reduce = useReducedMotion()
 
   const heroStyle =
     score && typeof maxScore === 'number'
       ? { background: heroColor(score.score / maxScore) }
       : undefined
 
+  // Контейнер задаёт ступенчатый влёт детей; элементы влетают пружиной.
+  const container: Variants = {
+    hidden: {},
+    show: { transition: { staggerChildren: reduce ? 0 : 0.06, delayChildren: 0.08 } },
+  }
+  const item: Variants = reduce
+    ? { hidden: { opacity: 1 }, show: { opacity: 1 } }
+    : {
+        hidden: { opacity: 0, y: 16, scale: 0.94 },
+        show: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: { type: 'spring', stiffness: 420, damping: 28 },
+        },
+      }
+  // Плитки критериев — отдельный вложенный stagger, чтобы влетали друг за другом.
+  const grid: Variants = {
+    hidden: {},
+    show: { transition: { staggerChildren: reduce ? 0 : 0.045 } },
+  }
+
   return (
-    <>
-      <div className={styles.hero} style={heroStyle}>
+    <motion.div variants={container} initial="hidden" animate="show">
+      <motion.div className={styles.hero} style={heroStyle} variants={item}>
         <div className={styles.heroLabel}>Итоговый балл</div>
         {score ? (
           <ScoreCounter target={score.score} max={maxScore} />
@@ -125,43 +101,45 @@ export function ResultView({ text, type }: { text: string; type: WorkType }) {
           <div className={styles.heroNum}>—</div>
         )}
         <div className={styles.heroType}>{resultLabel}</div>
-      </div>
+      </motion.div>
 
       {criteria.length > 0 && (
-        <div className={styles.criteriaGrid}>
+        <motion.div className={styles.criteriaGrid} variants={grid}>
           {criteria.map((c, i) => {
             const max = typeof c.max === 'number' ? c.max : null
             const color = max ? pillColor(c.score / max) : 'var(--indigo)'
-            // Лёгкий разнонаправленный наклон стикеров + ступенчатый влёт.
+            // Лёгкий разнонаправленный наклон стикеров.
             const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3))
-            const pillStyle = {
-              '--tilt': `${tilt}deg`,
-              animationDelay: `${i * 55}ms`,
-            } as CSSProperties
             return (
-              <div className={styles.pill} key={c.num} style={pillStyle}>
+              <motion.div
+                className={styles.pill}
+                key={c.num}
+                variants={item}
+                style={{ rotate: reduce ? 0 : tilt }}
+              >
                 <div className={styles.pillName}>{c.name}</div>
                 <div className={styles.pillScore} style={{ color }}>
                   {c.score}
                 </div>
                 <div className={styles.pillMax}>из {c.max}</div>
-              </div>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
 
       <div>
         {sections.map((s, idx) => (
-          <div
+          <motion.div
             className={`${styles.section} ${s.tone !== 'neutral' ? styles[s.tone] : ''}`}
             key={idx}
+            variants={item}
           >
             {s.title ? <div className={styles.sectionTitle}>{s.title}</div> : null}
             {s.body ? <div className={styles.sectionBody}>{s.body}</div> : null}
-          </div>
+          </motion.div>
         ))}
       </div>
-    </>
+    </motion.div>
   )
 }

@@ -28,16 +28,6 @@
   --c-warn: #e6900f;
   --c-error: var(--coral-deep);
 
-  /* Цвета типов ошибок (подсветка текста + легенда) */
-  --purple: #7c3aed;
-  --err-spelling: var(--coral-deep); /* орфографическая — красный */
-  --err-punctuation: #e6760f; /* пунктуационная — оранжевый */
-  --err-grammar: #c98a00; /* грамматическая — горчично-жёлтый (контраст на «бумаге») */
-  --err-speech: var(--green-deep); /* речевая — зелёный */
-  --err-factual: var(--indigo); /* фактическая — синий */
-  --err-logical: var(--purple); /* логическая — фиолетовый */
-  --err-recommendation: var(--ink-faint); /* рекомендация — серый */
-
   /* Формы и линии */
   --r-lg: 26px;
   --r-md: 18px;
@@ -61,20 +51,6 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background-color: var(--paper);
-  /* Ощущение нативного приложения внутри Telegram: */
-  overscroll-behavior: none;   /* без «резинового» отскока у краёв */
-  touch-action: pan-y;         /* только вертикальный скролл — ни pinch-zoom, ни double-tap-zoom */
-  -webkit-touch-callout: none; /* без iOS long-press контекст-меню */
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* В полях ввода возвращаем нормальное выделение/редактирование и жесты. */
-input,
-textarea,
-[contenteditable='true'] {
-  -webkit-user-select: text;
-  user-select: text;
-  touch-action: auto;
 }
 
 body {
@@ -105,87 +81,11 @@ body::after {
   margin: 0 auto;
 }
 
-/* ── Keyframes ── */
-
-/* Пружинный вход блока (overshoot) */
-@keyframes pop {
-  0% {
-    opacity: 0;
-    transform: translateY(18px) scale(0.96);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(-4px) scale(1.012);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Влёт стикера с лёгким поворотом */
-@keyframes stickerIn {
-  0% {
-    opacity: 0;
-    transform: translateY(10px) rotate(-6deg) scale(0.8);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(-2px) rotate(1.5deg) scale(1.05);
-  }
-  100% {
-    transform: translateY(0) rotate(var(--tilt, 0deg)) scale(1);
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-7px) rotate(-1deg);
-  }
-  40% {
-    transform: translateX(7px) rotate(1deg);
-  }
-  60% {
-    transform: translateX(-5px);
-  }
-  80% {
-    transform: translateX(5px);
-  }
-}
-
-@keyframes dots {
-  0% {
-    content: '';
-  }
-  25% {
-    content: '.';
-  }
-  50% {
-    content: '..';
-  }
-  75% {
-    content: '...';
-  }
-}
-
-@keyframes bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
+/* ── Keyframes ──
+   Вход карточек/плиток/секций оркеструет Motion (см. App.tsx, ResultView.tsx).
+   Чисто-CSS лупы (spin/shake/dots/bob) перенесены в свои *.module.css:
+   CSS Modules скоупит имя в `animation`, поэтому глобальный @keyframes
+   не находился и анимации (в т.ч. спиннер проверки) не работали. */
 
 /* Доступность: гасим анимации, мгновенно показывая конечное состояние
    (fill-mode both сохраняет финальный кадр — наклон стикеров и видимость). */

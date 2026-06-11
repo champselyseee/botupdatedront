@@ -33,3 +33,15 @@
   line-height: 1.65;
   margin-bottom: 26px;
 }
+
+/* Keyframes держим в этом же модуле — иначе CSS Modules скоупит имя в `animation`,
+   и глобальный @keyframes (index.css) не находится. */
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}

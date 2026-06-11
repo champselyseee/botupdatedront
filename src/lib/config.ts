@@ -1,8 +1,8 @@
 // Адрес Railway-сервиса. Переопределяется переменной окружения VITE_BACKEND_URL
-// при сборке (см. .env.example). Дефолт — бэкенд зеркала (backendmirrr).
+// при сборке (см. .env.example). Дефолт совпадает с актуальным index-9.html.
 export const BACKEND_URL: string =
   (import.meta.env.VITE_BACKEND_URL as string | undefined)?.replace(/\/+$/, '') ||
-  'https://backendmirrr-production.up.railway.app'
+  'https://boooot-production-6bee.up.railway.app'
 
 // Токен из query-параметра ?token=... (выдаётся ботом при открытии WebApp).
 export const URL_TOKEN: string =
