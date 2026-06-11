@@ -1,0 +1,4 @@
+.dots::after {
+  content: '';
+  animation: dots 1.5s steps(4, end) infinite;
+}
