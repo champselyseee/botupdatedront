@@ -26,19 +26,72 @@ export interface ProxyPayload {
 
 /**
  * Основная проверка работы. Сжигает токен на бэкенде.
+ *
+ * Запрашивает потоковый ответ (`stream: true`): проверка длится 1–3 минуты, и
+ * без потока соединение в Telegram WebView рвалось с ошибкой «load failed».
+ * Бэк шлёт построчный JSON (NDJSON): `{"type":"ping"}` — «пульс» для удержания
+ * связи, `{"type":"done","answer":...}` — результат, `{"type":"error",...}` —
+ * ошибка. Старый бэк (без потока) отвечает одним JSON — этот случай тоже
+ * поддерживается ради безопасного поэтапного деплоя.
+ *
  * Бросает Error с текстом из поля `error` бэкенда либо `HTTP <status>`.
  */
 export async function submitProxy(payload: ProxyPayload): Promise<string> {
   const res = await fetch(`${BACKEND_URL}/proxy`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, stream: true }),
   })
-  const data: ProxyResponse = await res.json().catch(() => ({}))
+
+  // Ранние ошибки бэка (плохой токен, пустая работа и т.п.) приходят обычным
+  // JSON с кодом 4xx — до начала потока.
   if (!res.ok) {
+    const data: ProxyResponse = await res.json().catch(() => ({}))
     throw new Error(data.error || `HTTP ${res.status}`)
   }
-  return data.answer ?? ''
+
+  // Старый бэк без стриминга отвечает одним JSON — поддерживаем совместимость.
+  const ctype = res.headers.get('content-type') || ''
+  if (!res.body || !ctype.includes('ndjson')) {
+    const data: ProxyResponse = await res.json().catch(() => ({}))
+    if (data.error) throw new Error(data.error)
+    return data.answer ?? ''
+  }
+
+  // Новый бэк: читаем поток построчно. «Пульсы» игнорируем, ждём done/error.
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  let answer = ''
+  let gotDone = false
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    let nl = buf.indexOf('\n')
+    while (nl >= 0) {
+      const line = buf.slice(0, nl).trim()
+      buf = buf.slice(nl + 1)
+      nl = buf.indexOf('\n')
+      if (!line) continue
+      let msg: { type?: string; answer?: string; error?: string }
+      try {
+        msg = JSON.parse(line)
+      } catch {
+        continue // неполная/битая строка — пропускаем
+      }
+      if (msg.type === 'ping') continue
+      if (msg.type === 'error') throw new Error(msg.error || 'Ошибка проверки')
+      if (msg.type === 'done') {
+        answer = msg.answer ?? ''
+        gotDone = true
+      }
+    }
+  }
+  if (!gotDone) {
+    throw new Error('Соединение прервалось до получения результата')
+  }
+  return answer
 }
 
 /**
